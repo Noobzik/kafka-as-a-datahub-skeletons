@@ -1,16 +1,19 @@
 package org.esgi.project.kafka
 
 import io.github.azhur.kafka.serde.PlayJsonSupport
+import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecords, KafkaConsumer}
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.kafka.streams.StreamsConfig
 import org.esgi.project.kafka.models.ConnectionEvent
 
-import java.util.Properties
+import java.time.{Duration, OffsetDateTime}
+import java.util.{Properties, UUID}
 import java.util.concurrent.{ScheduledFuture, TimeUnit}
+import scala.jdk.CollectionConverters._
 
 object MessageProcessing extends PlayJsonSupport with SimpleSchedulingLoops {
-  val props = buildProperties
+
 
   // TODO: fill your first name & last name
   val yourFirstName: String = ???
@@ -19,16 +22,19 @@ object MessageProcessing extends PlayJsonSupport with SimpleSchedulingLoops {
   val applicationName = s"simple-app-$yourFirstName-$yourLastName"
   val topicName: String = "connection-events"
 
+  val propsProducer: Properties = buildProducerProperties
+  val propsConsumer: Properties = buildConsumerProperties
+
   def run(): ScheduledFuture[_] = {
     producerScheduler.schedule(producerLoop, 1, TimeUnit.SECONDS)
     consumerScheduler.schedule(consumerLoop, 1, TimeUnit.SECONDS)
   }
 
   // TODO: implement message production
-  def producerLoop = {
+  def producerLoop(): Unit = {
     // Instantiating the producer
     // toSerializer comes from PlayJsonSupport and implements Serdes automatically from Play Json directives
-    val producer = new KafkaProducer[String, ConnectionEvent](props, toSerializer[String], toSerializer[ConnectionEvent])
+    val producer = new KafkaProducer[String, ConnectionEvent](propsProducer, toSerializer[String], toSerializer[ConnectionEvent])
 
     // TODO: use this loop to produce messages
     while (!producerScheduler.isShutdown) {
@@ -63,17 +69,21 @@ object MessageProcessing extends PlayJsonSupport with SimpleSchedulingLoops {
     consumer.close()
   }
 
-  def buildProperties: Properties = {
+  def buildProducerProperties: Properties = {
     val properties = new Properties()
-    properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-    properties.put(StreamsConfig.CLIENT_ID_CONFIG, applicationName)
-    properties.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationName)
-    // Disable caching to print the aggregation value after each record
-    // properties.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, "0")
-    properties.put(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, "0")
-    properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
-    properties.put(StreamsConfig.REPLICATION_FACTOR_CONFIG, "-1")
+    properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    properties.put(ProducerConfig.CLIENT_DNS_LOOKUP_CONFIG, "use_all_dns_ips")
+    properties.put(ProducerConfig.CLIENT_ID_CONFIG, applicationName)
     properties.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1")
+    properties
+  }
+
+  def buildConsumerProperties: Properties = {
+    val properties = new Properties()
+    properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    properties.put(ConsumerConfig.CLIENT_DNS_LOOKUP_CONFIG, "use_all_dns_ips")
+    properties.put(ConsumerConfig.CLIENT_ID_CONFIG, applicationName)
+    properties.put(ConsumerConfig.GROUP_ID_CONFIG, applicationName)
     properties
   }
 }
