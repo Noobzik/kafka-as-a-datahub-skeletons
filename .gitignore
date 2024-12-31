@@ -50,3 +50,5 @@ cmake-build-*/
 out/
 
 target
+
+kafka-stream/.idea/
