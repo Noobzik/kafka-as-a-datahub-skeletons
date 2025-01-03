@@ -53,10 +53,10 @@ object MessageProcessing extends PlayJsonSupport with SimpleSchedulingLoops {
   }
 
   // Message consumption
-  def consumerLoop = {
+  def consumerLoop(): Unit = {
     // Instantiating the consumer
     // toDeserializer comes from PlayJsonSupport and implements Serdes automatically from Play Json directives
-    val consumer = new KafkaConsumer[String, ConnectionEvent](props, toDeserializer[String], toDeserializer[ConnectionEvent])
+    val consumer = new KafkaConsumer[String, ConnectionEvent](propsConsumer, toDeserializer[String], toDeserializer[ConnectionEvent])
     // TODO: subscribe to the topic to receive the messages - topicName contains the name of the topic.
 
     // Consuming messages on our topic
@@ -71,7 +71,7 @@ object MessageProcessing extends PlayJsonSupport with SimpleSchedulingLoops {
 
   def buildProducerProperties: Properties = {
     val properties = new Properties()
-    properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092")
     properties.put(ProducerConfig.CLIENT_DNS_LOOKUP_CONFIG, "use_all_dns_ips")
     properties.put(ProducerConfig.CLIENT_ID_CONFIG, applicationName)
     properties.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1")
@@ -80,10 +80,11 @@ object MessageProcessing extends PlayJsonSupport with SimpleSchedulingLoops {
 
   def buildConsumerProperties: Properties = {
     val properties = new Properties()
-    properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092")
     properties.put(ConsumerConfig.CLIENT_DNS_LOOKUP_CONFIG, "use_all_dns_ips")
     properties.put(ConsumerConfig.CLIENT_ID_CONFIG, applicationName)
     properties.put(ConsumerConfig.GROUP_ID_CONFIG, applicationName)
+    properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
     properties
   }
 }
