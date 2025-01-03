@@ -6,9 +6,10 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
-import org.apache.kafka.streams.kstream.Windowed
+import org.apache.kafka.streams.kstream.{JoinWindows, TimeWindows, Windowed}
 import org.esgi.project.streaming.models.{MeanLatencyForURL, Metric, Visit, VisitWithLatency}
 
+import java.time.Duration
 import java.util.Properties
 
 object StreamProcessing extends PlayJsonSupport {
@@ -40,8 +41,8 @@ object StreamProcessing extends PlayJsonSupport {
   val builder: StreamsBuilder = new StreamsBuilder
 
   // TODO: declared topic sources to be used
-  val visits: KStream[String, Visit] = builder.stream[String, Visit](visitsTopicName)
-  val metrics: KStream[String, Metric] = builder.stream[String, Metric](metricsTopicName)
+  val visits: KStream[String, Visit] = ???
+  val metrics: KStream[String, Metric] = ???
 
   /**
    * -------------------
@@ -68,11 +69,13 @@ object StreamProcessing extends PlayJsonSupport {
   val visitsGroupedByCategory: KGroupedStream[String, Visit] = ???
 
   // TODO: implement a computation of the visits count per category for the last 30 seconds,
-  // TODO: the last minute and the last 5 minutes
+
   val visitsOfLast30SecondsByCategory: KTable[Windowed[String], Long] = ???
 
+  // TODO: the last minute
   val visitsOfLast1MinuteByCategory: KTable[Windowed[String], Long] = ???
 
+  // TODO: and the last 5 minutes
   val visitsOfLast5MinuteByCategory: KTable[Windowed[String], Long] = ???
 
   // TODO: implement a join between the visits topic and the metrics topic,
@@ -102,14 +105,13 @@ object StreamProcessing extends PlayJsonSupport {
     streams
   }
 
-  // auto loader from properties file in project
+  // autoloader from properties file in project
   def buildProperties: Properties = {
     val properties = new Properties()
-    properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    // Utilisez le port 19092 pour les brokers Kafka sous Conduktor, sinon 9092
+    properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092")
     properties.put(StreamsConfig.CLIENT_ID_CONFIG, applicationName)
     properties.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationName)
-    // Disable caching to print the aggregation value after each record
-    // properties.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, "0")
     properties.put(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, "0")
     properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
     properties.put(StreamsConfig.REPLICATION_FACTOR_CONFIG, "-1")
